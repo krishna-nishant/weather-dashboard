@@ -19,7 +19,7 @@ function Header() {
           className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-all duration-200 hover:ring-2 hover:ring-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="View GitHub Repository"
         >
-          <Github size={20} />
+          <Github size={20} aria-hidden="true" />
         </a>
         <a
           href="https://krishna-nishant.vercel.app/"
@@ -28,7 +28,7 @@ function Header() {
           className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 transition-all duration-200 hover:ring-2 hover:ring-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="View Portfolio"
         >
-          <User size={20} />
+          <User size={20} aria-hidden="true" />
         </a>
       </div>
     </div>
