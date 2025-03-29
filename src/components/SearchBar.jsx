@@ -2,21 +2,27 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, MapPin } from "lucide-react";
 import locationService from "../services/locationService";
 
+/**
+ * SearchBar component with city suggestion autocomplete
+ * Provides keyboard navigation, highlighted matches, and error handling
+ */
 const SearchBar = ({ onSearch }) => {
+  // State variables
   const [city, setCity] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Refs
+  const suggestionsRef = useRef(null);  // Reference to suggestions dropdown
+  const inputRef = useRef(null);        // Reference to search input field
+  const debounceTimerRef = useRef(null); // For managing API call delay
 
-  const suggestionsRef = useRef(null);
-  const inputRef = useRef(null);
-  const debounceTimerRef = useRef(null);
-
-  // Fetch suggestions when input changes
+  // Fetch suggestions when input changes with debouncing
   useEffect(() => {
-    // Clear any pending debounce
+    // Clear any pending debounce to prevent API request spam
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -28,24 +34,24 @@ const SearchBar = ({ onSearch }) => {
       setError("");
       return;
     }
-
+    
     // Show loading indicator
     setLoading(true);
     setError("");
-
-    // Set a delay before making API call
+    
+    // Set a delay before making API call to reduce unnecessary requests
     debounceTimerRef.current = setTimeout(async () => {
       try {
         // Get suggestions from service
         const results = await locationService.getCitySuggestions(city);
         setSuggestions(results);
-        setActiveSuggestion(-1);
-
+        setActiveSuggestion(-1); // Reset active suggestion when new results arrive
+        
         // Show suggestions if we have results and input is focused
         setShowSuggestions(
           results.length > 0 && document.activeElement === inputRef.current
         );
-
+        
         // Show error if no results
         if (results.length === 0) {
           setError(
@@ -57,8 +63,9 @@ const SearchBar = ({ onSearch }) => {
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 300); // 300ms delay for debouncing
 
+    // Cleanup function to clear timer when component unmounts or input changes
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -66,7 +73,7 @@ const SearchBar = ({ onSearch }) => {
     };
   }, [city]);
 
-  // Handle outside clicks to close suggestion box
+  // Handle outside clicks to close suggestion box (accessibility & UX)
   useEffect(() => {
     function handleClickOutside(event) {
       const clickedOutsideSuggestions =
@@ -75,6 +82,7 @@ const SearchBar = ({ onSearch }) => {
       const clickedOutsideInput =
         inputRef.current && !inputRef.current.contains(event.target);
 
+      // If click is outside both the input and suggestions, close the suggestions
       if (clickedOutsideSuggestions && clickedOutsideInput) {
         setShowSuggestions(false);
       }
@@ -93,29 +101,29 @@ const SearchBar = ({ onSearch }) => {
     }
   }
 
-  // Handle suggestion click
+  // Handle suggestion click with small delay for UI update
   function handleSuggestionClick(suggestion) {
     setCity(suggestion.name);
     setShowSuggestions(false);
-    // Small delay to ensure UI updates first
+    // Small delay to ensure UI updates first and prevent race conditions
     setTimeout(() => onSearch(suggestion.name), 10);
   }
 
-  // Show suggestions on input focus
+  // Show suggestions on input focus if we have valid data
   function handleFocus() {
     if (city.trim().length >= 2 && suggestions.length > 0) {
       setShowSuggestions(true);
     }
   }
 
-  // Handle keyboard navigation
+  // Keyboard navigation for accessibility
   function handleKeyDown(e) {
-    // Handle escape key regardless of suggestions
+    // Handle escape key regardless of suggestions state
     if (e.key === "Escape") {
       setShowSuggestions(false);
       return;
     }
-
+    
     // Skip if no suggestions visible
     if (!showSuggestions || suggestions.length === 0) {
       return;
@@ -145,11 +153,11 @@ const SearchBar = ({ onSearch }) => {
     }
   }
 
-  // Highlight matching text in suggestions
+  // Highlight matching text in suggestions for better UX
   function highlightMatch(text, query) {
     if (!query.trim()) return text;
 
-    // Create regex to find matches (escape special chars)
+    // Create regex to find matches (escape special chars for safety)
     const regex = new RegExp(
       `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
       "gi"
@@ -160,6 +168,7 @@ const SearchBar = ({ onSearch }) => {
       <>
         {parts.map((part, i) =>
           regex.test(part) ? (
+            // Highlight the matching part of the text
             <span
               key={i}
               className="font-semibold text-blue-600 dark:text-blue-400"
@@ -206,7 +215,7 @@ const SearchBar = ({ onSearch }) => {
         </button>
       </div>
 
-      {/* City suggestions dropdown */}
+      {/* City suggestions dropdown - high z-index ensures it appears above other content */}
       {(showSuggestions || loading) && (
         <div
           ref={suggestionsRef}
@@ -221,12 +230,14 @@ const SearchBar = ({ onSearch }) => {
             </div>
           ) : (
             <>
+              {/* Error message display */}
               {error && (
                 <div className="p-2 text-center text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 text-sm">
                   {error}
                 </div>
               )}
 
+              {/* Suggestion list */}
               {suggestions.length > 0 && (
                 <ul className="py-1">
                   {suggestions.map((suggestion, index) => (
@@ -247,9 +258,11 @@ const SearchBar = ({ onSearch }) => {
                         className="text-gray-400 dark:text-gray-500"
                       />
                       <div className="flex-1">
+                        {/* City name with highlighted matching text */}
                         <p className="text-gray-700 dark:text-gray-200 font-medium">
                           {highlightMatch(suggestion.name, city)}
                         </p>
+                        {/* Additional location info */}
                         <div className="flex flex-wrap text-xs text-gray-500 dark:text-gray-400">
                           <span className="mr-2">{suggestion.fullName}</span>
                           {suggestion.latitude && suggestion.longitude && (

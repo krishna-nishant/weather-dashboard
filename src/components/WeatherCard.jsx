@@ -1,12 +1,17 @@
 import React from "react";
 import { RefreshCw, Droplets, Wind } from "lucide-react";
 
+/**
+ * Weather card component to display current weather and forecast
+ * Shows either weather data or error message
+ */
 const WeatherCard = ({
   weatherData,
   forecastData,
   error,
   onRefresh,
 }) => {
+  // Error state handling
   if (error) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center shadow-lg border border-red-200 dark:border-red-900 animate-fadeIn">
@@ -34,16 +39,19 @@ const WeatherCard = ({
     );
   }
 
+  // Don't render anything if there's no weather data
   if (!weatherData) {
     return null;
   }
 
+  // Process the forecast data to get daily forecasts
   const dailyForecasts = forecastData ? processForecastData(forecastData) : [];
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Current weather */}
+      {/* Current weather section */}
       <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl">
+        {/* Gradient header with city name */}
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/80 to-indigo-600/80 mix-blend-multiply"></div>
           <div className="p-6 relative z-10">
@@ -51,6 +59,7 @@ const WeatherCard = ({
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1 flex items-center">
                   {weatherData.name}, {weatherData.sys.country}
+                  {/* Refresh button */}
                   <button
                     onClick={() => onRefresh(weatherData.name)}
                     className="ml-2 p-1 text-white/70 hover:text-white rounded-full transition-colors"
@@ -62,6 +71,7 @@ const WeatherCard = ({
                     />
                   </button>
                 </h2>
+                {/* Current date display */}
                 <p className="text-blue-100 text-sm">
                   {new Date().toLocaleDateString("en-US", {
                     weekday: "long",
@@ -71,6 +81,7 @@ const WeatherCard = ({
                   })}
                 </p>
               </div>
+              {/* Weather icon */}
               <div className="flex items-center">
                 <img
                   className="w-24 h-24 object-contain filter drop-shadow-lg"
@@ -82,8 +93,10 @@ const WeatherCard = ({
           </div>
         </div>
 
+        {/* Weather details section */}
         <div className="p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            {/* Temperature and conditions */}
             <div className="mb-4 md:mb-0">
               <div className="flex items-end">
                 <h1 className="text-5xl font-bold text-gray-800 dark:text-white">
@@ -98,7 +111,9 @@ const WeatherCard = ({
               </p>
             </div>
 
+            {/* Additional weather metrics */}
             <div className="grid grid-cols-2 gap-4">
+              {/* Humidity indicator */}
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 mr-3">
                   <Droplets size={20} />
@@ -113,6 +128,7 @@ const WeatherCard = ({
                 </div>
               </div>
 
+              {/* Wind speed indicator */}
               <div className="flex items-center">
                 <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 mr-3">
                   <Wind size={20} />
@@ -131,13 +147,14 @@ const WeatherCard = ({
         </div>
       </div>
 
-      {/* 5-day forecast */}
+      {/* 5-day forecast section */}
       {dailyForecasts.length > 0 && (
         <div className="mt-6">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
             5-Day Forecast
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {/* Map through each day's forecast */}
             {dailyForecasts.map((day, index) => (
               <div
                 key={index}
@@ -167,14 +184,23 @@ const WeatherCard = ({
   );
 };
 
+/**
+ * Process the raw forecast data from OpenWeather API
+ * Converts 3-hour forecasts into daily forecasts
+ * Selects data point closest to noon for each day
+ * @param {Object} forecastData - Raw forecast data from the API
+ * @returns {Array} - Array of daily forecast objects
+ */
 const processForecastData = (forecastData) => {
   const dailyData = {};
 
+  // Process each forecast item (every 3 hours)
   forecastData.list.forEach((item) => {
     const date = new Date(item.dt * 1000);
     const day = date.toLocaleDateString("en-US", { weekday: "short" });
     const hour = date.getHours();
 
+    // Select data point closest to noon for each day
     if (
       !dailyData[day] ||
       Math.abs(hour - 12) < Math.abs(dailyData[day].hour - 12)
@@ -189,6 +215,7 @@ const processForecastData = (forecastData) => {
     }
   });
 
+  // Convert the object to an array and return the first 5 days
   return Object.values(dailyData).slice(0, 5);
 };
 

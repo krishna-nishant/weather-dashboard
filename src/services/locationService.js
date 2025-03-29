@@ -1,9 +1,15 @@
 import axios from 'axios';
 
+// Username for GeoNames API from environment variables
 const VITE_GEONAMES_USERNAME = import.meta.env.VITE_GEONAMES_USERNAME;
 
 const locationService = {
+    /**
+     * Fetches city suggestions based on search term
+     * Uses GeoNames API to find cities in India
+     */
     getCitySuggestions: async (searchTerm) => {
+        // Return empty array for short search terms (less than 2 chars)
         if (!searchTerm || searchTerm.length < 2) {
             return [];
         }
@@ -14,13 +20,13 @@ const locationService = {
                 'https://secure.geonames.org/searchJSON', {
                 params: {
                     name_startsWith: searchTerm,
-                    country: 'IN',
-                    featureClass: 'P',
-                    orderby: 'population',
-                    maxRows: 5,
+                    country: 'IN',        // Only Indian cities
+                    featureClass: 'P',    // Only populated places
+                    orderby: 'population', // Sort by population (largest first)
+                    maxRows: 5,           // Limit to 5 results
                     username: VITE_GEONAMES_USERNAME
                 },
-                timeout: 5000
+                timeout: 5000             // Timeout after 5 seconds
             });
 
             // Then try with regular search for broader matches
@@ -30,7 +36,7 @@ const locationService = {
                     q: searchTerm,
                     country: 'IN',
                     featureClass: 'P',
-                    orderby: 'relevance',
+                    orderby: 'relevance', // Sort by relevance to query
                     maxRows: 5,
                     username: VITE_GEONAMES_USERNAME
                 },
@@ -44,12 +50,13 @@ const locationService = {
             // Get all results and remove duplicates by geonameId
             const allResults = [...startsWithResults];
             containsResults.forEach(city => {
+                // Only add if not already in results (avoid duplicates)
                 if (!allResults.some(existing => existing.geonameId === city.geonameId)) {
                     allResults.push(city);
                 }
             });
 
-            // Format the results
+            // Format the results with cleaner structure
             const formattedCities = allResults.map(city => ({
                 name: city.name,
                 fullName: city.adminName1 ? `${city.name}, ${city.adminName1}, India` : `${city.name}, India`,

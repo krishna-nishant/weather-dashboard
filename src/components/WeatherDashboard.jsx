@@ -7,14 +7,23 @@ import useSearchHistory from "../hooks/useSearchHistory";
 import weatherService from "../services/weatherService";
 import { MapPin, Navigation } from "lucide-react";
 
+/**
+ * Main dashboard component for the weather application
+ * Handles fetching and displaying weather data, user location,
+ * and search functionality
+ */
 function WeatherDashboard() {
+  // State for weather data and UI
   const [weatherData, setWeatherData] = useState(null);
   const [forecastData, setForecastData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [geoLoading, setGeoLoading] = useState(false);
+  
+  // Custom hook for managing search history
   const { searchHistory, addToHistory } = useSearchHistory(5);
 
+  // Check for API key on component mount
   useEffect(() => {
     if (!weatherService.isApiKeyAvailable()) {
       setError(
@@ -23,6 +32,10 @@ function WeatherDashboard() {
     }
   }, []);
 
+  /**
+   * Fetch weather data for a specific city
+   * Updates weather and forecast data, adds city to search history
+   */
   const fetchWeather = async (city) => {
     if (!weatherService.isApiKeyAvailable()) {
       setError(
@@ -50,6 +63,10 @@ function WeatherDashboard() {
     }
   };
 
+  /**
+   * Fetch weather data using geographic coordinates
+   * Used when the user uses the "Use My Location" feature
+   */
   const fetchWeatherByCoords = async (latitude, longitude) => {
     if (!weatherService.isApiKeyAvailable()) {
       setError(
@@ -66,6 +83,7 @@ function WeatherDashboard() {
       setWeatherData(response.weatherData);
       setForecastData(response.forecastData);
       
+      // Add the detected city to search history
       if (response.weatherData && response.weatherData.name) {
         addToHistory(response.weatherData.name);
       }
@@ -78,22 +96,30 @@ function WeatherDashboard() {
     }
   };
 
+  /**
+   * Handle the "Use My Location" button click
+   * Uses browser's geolocation API to get user coordinates
+   */
   const handleLocationClick = () => {
     setGeoLoading(true);
     setError(null);
     
+    // Check if geolocation is supported by the browser
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
       setGeoLoading(false);
       return;
     }
     
+    // Request the user's current position
     navigator.geolocation.getCurrentPosition(
+      // Success callback
       (position) => {
         const { latitude, longitude } = position.coords;
         fetchWeatherByCoords(latitude, longitude);
         setGeoLoading(false);
       },
+      // Error callback with specific error messages
       (error) => {
         let errorMessage = "Failed to get your location";
         switch(error.code) {
@@ -115,13 +141,17 @@ function WeatherDashboard() {
     );
   };
   
+  // Show initial content only when no weather data, no loading, and no errors
   const showInitialContent = !weatherData && !loading && !error;
 
   return (
     <>
+      {/* Search bar component */}
       <SearchBar onSearch={fetchWeather} />
       
+      {/* Conditional rendering based on application state */}
       {showInitialContent ? (
+        // Show location button when no weather data is displayed
         <div className="mt-6 mb-8">
           <div className="flex flex-col items-center">
             <p className="text-gray-600 dark:text-gray-300 mb-3 text-center">
@@ -134,11 +164,13 @@ function WeatherDashboard() {
               aria-label="Use my current location for weather"
             >
               {geoLoading ? (
+                // Loading state for location button
                 <>
                   <div className="w-5 h-5 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin"></div>
                   <span className="font-medium">Getting location...</span>
                 </>
               ) : (
+                // Default state for location button
                 <>
                   <Navigation size={20} className="text-blue-500 dark:text-blue-400 group-hover:rotate-45 transition-transform duration-300" />
                   <span className="font-medium">Use My Location</span>
@@ -148,10 +180,13 @@ function WeatherDashboard() {
           </div>
         </div>
       ) : (
+        // Show recent searches when weather data is displayed
         <RecentSearches searches={searchHistory} onSelect={fetchWeather} />
       )}
 
+      {/* Loading indicator or weather card */}
       {loading ? (
+        // Loading state
         <div className="bg-white/30 dark:bg-gray-800/30 backdrop-blur-md rounded-xl p-8 text-center shadow-lg animate-pulse">
           <Loader size="large" />
           <p className="mt-4 text-gray-600 dark:text-gray-300">
@@ -159,6 +194,7 @@ function WeatherDashboard() {
           </p>
         </div>
       ) : (
+        // Weather display
         <WeatherCard
           weatherData={weatherData}
           forecastData={forecastData}
